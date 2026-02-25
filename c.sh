@@ -1,6 +1,5 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 set -euo pipefail
-setopt pipefail
 
 usage() {
   cat <<'EOF'
@@ -40,8 +39,25 @@ reasoning_effort="low"
 
 note() {
   if (( verbose >= 1 )); then
-    print -u2 -r -- "$*"
+    printf '%s\n' "$*" >&2
   fi
+}
+
+join_by() {
+  local sep="$1"
+  shift || true
+  local out=""
+  local first=1
+  local item
+  for item in "$@"; do
+    if (( first )); then
+      out="$item"
+      first=0
+    else
+      out+="${sep}${item}"
+    fi
+  done
+  printf '%s' "$out"
 }
 
 question_parts=()
@@ -106,8 +122,8 @@ if [[ ${#question_parts[@]} -eq 0 ]]; then
   fi
 fi
 
-question="${(j: :)question_parts}"
-if ! [[ "$window_seconds" == <-> ]]; then
+question="$(join_by ' ' "${question_parts[@]}")"
+if ! [[ "$window_seconds" =~ ^[0-9]+$ ]]; then
   echo "c: --window must be a positive integer" >&2
   exit 2
 fi
@@ -125,17 +141,19 @@ done
 if [[ ${#detected_shells[@]} -eq 0 ]]; then
   detected_shells=("unknown")
 fi
-available_shells="${(j:, :)detected_shells}"
+available_shells="$(join_by ', ' "${detected_shells[@]}")"
 
 context_env_names="${C_CONTEXT_ENV_VARS:-HOME USER SHELL EDITOR VISUAL PAGER LANG TERM}"
 context_env_block=""
-for name in ${(z)context_env_names}; do
+env_name_array=()
+IFS=' ' read -r -a env_name_array <<< "$context_env_names"
+for name in "${env_name_array[@]}"; do
   [[ -z "$name" ]] && continue
   # Only allow simple variable names to prevent prompt injection via names.
   if ! [[ "$name" == [A-Za-z_][A-Za-z0-9_]* ]]; then
     continue
   fi
-  value="${(P)name-}"
+  value="${!name-}"
   if [[ -n "$value" ]]; then
     value="${value//$'\n'/\\n}"
     value="${value//$'\r'/\\r}"
@@ -146,7 +164,7 @@ if [[ -z "$context_env_block" ]]; then
   context_env_block="- (none)\n"
 fi
 
-system_prompt=$'You are a command suggestion assistant for terminal users.\n\nHard rules:\n1) Never execute commands.\n2) Never run shell commands.\n3) Never read, open, inspect, or list files/directories.\n4) Never infer repository or filesystem state beyond the provided context.\n5) Only suggest commands for the user to run themselves.\n\nDefault output contract (important):\n- Give ONE best command by default.\n- Output plain terminal text only (no Markdown, no code fences, no tables).\n- Keep it short.\n- Put the command first, copy-paste ready.\n- Optionally add one brief line after it only if needed to clarify.\n\nAggressive adaptation rules using conversation history:\n- Treat a near-exact consecutive repeat as likely dissatisfaction.\n- \"Near-exact consecutive repeat\" means the current user request is semantically the same task as the immediately previous user request in this thread, even if wording differs slightly.\n- On the first near-exact consecutive repeat (same ask twice in a row): switch to a more verbose response immediately.\n- For that repeat case: provide one recommended command plus 2-3 alternatives, each with a short reason/tradeoff.\n- On the second and later near-exact consecutive repeats (same ask three+ times in a row): use chattiest mode.\n- In chattiest mode: provide one recommended command plus up to 4 alternatives, with concise tradeoffs and a brief \"when to use which\" line.\n- If successive requests are clearly different tasks, treat that as context shift and immediately return to concise default mode (one best command).\n\nWhen to expand beyond one command regardless of history:\n- User explicitly asks for alternatives/options/comparison.\n- There is a real ambiguity where one command is not reliable.\n\nCommand recommendation preferences:\n- Prefer portable defaults first (commands likely present on macOS/Linux).\n- Prefer exact matches when the user asks exact; only broaden patterns when uncertainty is explicit.\n- Prefer `pgrep -af <name>` over `ps ... | grep ...` for process lookup when appropriate.\n- For filename searches, prefer `find` forms that are precise (`-type f`, `-name`/`-iname`, scoped path).\n- If recommending `fd` or `rg`, label them as optional/faster and include a portable fallback when helpful.\n- Keep searches scoped to the likely working path (`.` or provided scope), not root-level scans, unless requested.\n- Quote user-provided literals/patterns safely.\n- Prefer null-safe piping for filenames when chaining commands (`-print0` with `xargs -0`).\n- Avoid unnecessary subshells/pipelines when a simpler single command works.\n- Avoid destructive commands by default; if deletion/mutation is requested, suggest a safe preview/list command first.\n- Avoid `sudo` unless strictly required and explicitly justified.\n- When two commands are equivalent, pick the simpler one.\n\nSafety and quality:\n- Prefer commands compatible with available shells in context.\n- If a command is risky/destructive, call that out and prefer a safe preview/dry-run first.'
+system_prompt=$'You are a command suggestion assistant for terminal users.\n\nHard rules:\n1) Never execute commands.\n2) Never run shell commands.\n3) Never read, open, inspect, or list files/directories.\n4) Never infer repository or filesystem state beyond the provided context.\n5) Only suggest commands for the user to run themselves.\n\nDefault output contract (important):\n- Give ONE best command by default.\n- Output plain terminal text only (no Markdown, no code fences, no tables).\n- Keep it short.\n- Put the command first, copy-paste ready.\n- Optionally add one brief line after it only if needed to clarify.\n\nTerminal formatting rules:\n- You are writing to a developer in a terminal.\n- Prioritize readability with line breaks.\n- Use ASCII-only formatting.\n- Do not use Markdown syntax or backticks.\n- If giving alternatives, never place them in a single run-on sentence.\n- Put each alternative on its own line.\n- Use this shape for expanded replies:\n  Recommended:\n  <command>\n  Alternatives:\n  1) <command> - <short reason>\n  2) <command> - <short reason>\n\nAggressive adaptation rules using conversation history:\n- Treat a near-exact consecutive repeat as likely dissatisfaction.\n- \"Near-exact consecutive repeat\" means the current user request is semantically the same task as the immediately previous user request in this thread, even if wording differs slightly.\n- On the first near-exact consecutive repeat (same ask twice in a row): switch to a more verbose response immediately.\n- For that repeat case: provide one recommended command plus 2-3 alternatives, each with a short reason/tradeoff.\n- On the second and later near-exact consecutive repeats (same ask three+ times in a row): use chattiest mode.\n- In chattiest mode: provide one recommended command plus up to 4 alternatives, with concise tradeoffs and a brief \"when to use which\" line.\n- If successive requests are clearly different tasks, treat that as context shift and immediately return to concise default mode (one best command).\n\nWhen to expand beyond one command regardless of history:\n- User explicitly asks for alternatives/options/comparison.\n- There is a real ambiguity where one command is not reliable.\n\nCommand recommendation preferences:\n- Prefer portable defaults first (commands likely present on macOS/Linux).\n- Prefer exact matches when the user asks exact; only broaden patterns when uncertainty is explicit.\n- Prefer `pgrep -af <name>` over `ps ... | grep ...` for process lookup when appropriate.\n- For filename searches, prefer `find` forms that are precise (`-type f`, `-name`/`-iname`, scoped path).\n- If recommending `fd` or `rg`, label them as optional/faster and include a portable fallback when helpful.\n- Keep searches scoped to the likely working path (`.` or provided scope), not root-level scans, unless requested.\n- Quote user-provided literals/patterns safely.\n- Prefer null-safe piping for filenames when chaining commands (`-print0` with `xargs -0`).\n- Avoid unnecessary subshells/pipelines when a simpler single command works.\n- Avoid destructive commands by default; if deletion/mutation is requested, suggest a safe preview/list command first.\n- Avoid `sudo` unless strictly required and explicitly justified.\n- When two commands are equivalent, pick the simpler one.\n\nSafety and quality:\n- Prefer commands compatible with available shells in context.\n- If a command is risky/destructive, call that out and prefer a safe preview/dry-run first.'
 
 state_dir="${C_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/c}"
 mkdir -p "$state_dir"
@@ -162,7 +180,7 @@ if [[ "$force_new" -eq 0 && -r "$last_cwd_file" && -r "$last_time_file" && -r "$
   last_time_raw="$(<"$last_time_file")"
   last_thread_id="$(<"$last_thread_file")"
 
-  if [[ "$last_time_raw" == <-> ]]; then
+  if [[ "$last_time_raw" =~ ^[0-9]+$ ]]; then
     age=$(( now - last_time_raw ))
     if [[ "$last_cwd" == "$PWD" && $age -ge 0 && $age -lt $window_seconds && -n "$last_thread_id" ]]; then
       can_resume=1
@@ -285,7 +303,7 @@ if command -v jq >/dev/null 2>&1 && [[ -s "$log_file" ]]; then
 fi
 
 if [[ -n "$assistant_text" ]]; then
-  print -r -- "$assistant_text"
+  printf '%s\n' "$assistant_text"
 else
   if (( verbose >= 1 )); then
     note "[c] no assistant text found in JSON output"
@@ -322,9 +340,9 @@ if [[ "$exit_code" -eq 0 ]]; then
   fi
   if [[ -n "$new_thread_id" ]]; then
     now="$(date +%s)"
-    print -r -- "$PWD" > "$last_cwd_file"
-    print -r -- "$now" > "$last_time_file"
-    print -r -- "$new_thread_id" > "$last_thread_file"
+    printf '%s\n' "$PWD" > "$last_cwd_file"
+    printf '%s\n' "$now" > "$last_time_file"
+    printf '%s\n' "$new_thread_id" > "$last_thread_file"
   fi
 fi
 

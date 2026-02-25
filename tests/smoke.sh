@@ -1,9 +1,12 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 set -euo pipefail
-setopt pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT_PATH="$ROOT_DIR/c"
+if [[ -x "$ROOT_DIR/c.sh" ]]; then
+  SCRIPT_PATH="$ROOT_DIR/c.sh"
+else
+  SCRIPT_PATH="$ROOT_DIR/c"
+fi
 DATA_DIR="$ROOT_DIR/tests/data"
 
 if [[ ! -x "$SCRIPT_PATH" ]]; then
@@ -31,9 +34,8 @@ STATE_DIR="$TMP_ROOT/state"
 mkdir -p "$MOCK_BIN" "$MOCK_PAYLOAD_DIR" "$STATE_DIR" "$TMP_ROOT/other-dir"
 
 cat > "$MOCK_BIN/codex" <<'EOF'
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 set -euo pipefail
-setopt pipefail
 
 : "${MOCK_COUNT_FILE:?}"
 : "${MOCK_PAYLOAD_DIR:?}"
@@ -42,7 +44,7 @@ setopt pipefail
 count=0
 [[ -r "$MOCK_COUNT_FILE" ]] && count="$(<"$MOCK_COUNT_FILE")"
 count=$(( count + 1 ))
-print -r -- "$count" > "$MOCK_COUNT_FILE"
+printf '%s\n' "$count" > "$MOCK_COUNT_FILE"
 
 args_file="$MOCK_PAYLOAD_DIR/args.${count}.txt"
 payload_file="$MOCK_PAYLOAD_DIR/payload.${count}.txt"
@@ -86,14 +88,14 @@ done
 thread_id=""
 payload=""
 if [[ "$mode" == "resume" ]]; then
-  thread_id="${positionals[1]-}"
-  payload="${positionals[2]-}"
-else
+  thread_id="${positionals[0]-}"
   payload="${positionals[1]-}"
+else
+  payload="${positionals[0]-}"
 fi
 
-print -r -- "$payload" > "$payload_file"
-print -r -- "call=$count mode=$mode thread=$thread_id" >> "$MOCK_LOG"
+printf '%s\n' "$payload" > "$payload_file"
+printf '%s\n' "call=$count mode=$mode thread=$thread_id" >> "$MOCK_LOG"
 
 if [[ "$mode" == "resume" && -n "$thread_id" ]]; then
   tid="$thread_id"
