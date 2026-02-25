@@ -1,37 +1,50 @@
-# c-cli
+# c.sh
 
-![c-cli hero](assets/c-cli-hero.svg)
+![c.sh hero](assets/c-sh-hero.svg)
 
 Use Codex to help you with CLI command translation. OpenAI-only, because Codex is the whole point.
 
-```bash
-$ c "directories ending in .log older than 10 days"
-
-> find . -type d -name '*.log' -mtime +10
-```
-
 ## Why
 
-I've been using codex so much it's hard to imagine using any other tooling. I even disabled the AI features in my IDE and terminal (but I still use Codex in Zed through ACP). The one thing I missed was asking my terminal for help. So I brought that functionality back to my terminal using `codex`, a shell script, and an alias.
+I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I disabled the AI features in my IDE and terminal. I still use Codex in Zed through ACP. But very infrequently.
 
-It's a thin wrapper around `codex exec` for command suggestions:
-
-- asks Codex non-interactively
-- auto-resumes the last thread in the same directory (within a time window)
+The one feature I missed most was asking my terminal for help remembering a command. So I brought that functionality back to my terminal using `codex`, a shell script, and an alias. `c.sh` is a thin wrapper around `codex exec` for command suggestions. It asks Codex for help non-interactively and, if re-invoked in the same directory (within a time window), will offer alternative suggestions.
 
 I've tested this exclusively on `zsh`. It should work on `bash` too (including macOS versions).
 
-## Requirements
+## Options
+
+```text
+Usage: c [--new] [-v|-vv] <question...>
+
+Options:
+  --new                     force a new conversation
+  -v, --verbose             show wrapper diagnostics
+  -vv                       show full debug output
+  -m, --model               model name (default: gpt-5.1-codex-mini)
+  -w, --window              auto-resume window in seconds (default: 300)
+  -r, --reasoning-effort    model reasoning effort (default: low)
+```
+
+Examples:
+
+```bash
+c "how do i list files over 100MB?"
+c --new "find node processes and show full command lines"
+echo "search recursively for TODO comments" | c
+```
+
+## Install
+
+Just copy [`c.sh`](https://github.com/nebez/c.sh/blob/main/c.sh) somewhere to your liking and invoke it. If that's not enough for you, however, continue reading.
+
+There are no one-line installation instructions and I don't intend on adding one. Open and inspect [`c.sh`](https://github.com/nebez/c.sh/blob/main/c.sh), decide if you like it, then copy+paste it somewhere on your computer. After you've done that, here are a few ways to install it assuming it exists at `/absolute/path/to/c.sh`.
+
+### Requirements
 
 - `codex` CLI in your `PATH`
 - `bash`
 - `jq` (required for parsing JSON output)
-
-## Install
-
-Just copy [`c.sh`](https://github.com/nebez/c-cli/blob/main/c.sh) somewhere to your liking and invoke it. If that's not enough for you, however, continue reading.
-
-There are no one-line installation instructions and I don't intend on adding one. Open and inspect [`c.sh`](https://github.com/nebez/c-cli/blob/main/c.sh), decide if you like it, then copy+paste it somewhere on your computer. After you've done that, here are a few ways to install it assuming it exists at `/absolute/path/to/c.sh`.
 
 ### 1) Simple PATH install
 
@@ -57,26 +70,4 @@ Put this somewhere in your `~/.zshrc` or `~/.bashrc` file:
 c() {
   bash /absolute/path/to/c.sh "$@"
 }
-```
-
-## Options
-
-```text
-Usage: c [--new] [-v|-vv] <question...>
-
-Options:
-  --new                     force a new conversation
-  -v, --verbose             show wrapper diagnostics
-  -vv                       show full debug output
-  -m, --model               model name (default: gpt-5.1-codex-mini)
-  -w, --window              auto-resume window in seconds (default: 300)
-  -r, --reasoning-effort    model reasoning effort (default: low)
-```
-
-Examples:
-
-```bash
-c "how do i list files over 100MB?"
-c --new "find node processes and show full command lines"
-echo "search recursively for TODO comments" | c
 ```
