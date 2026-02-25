@@ -36,15 +36,15 @@ echo "search recursively for TODO comments" | c
 
 ## Install
 
-Just copy [`c.sh`](https://github.com/nebez/c.sh/blob/main/c.sh) somewhere to your liking and invoke it. If that's not enough for you, however, continue reading.
+Ensure you have the below available:
 
-There are no one-line installation instructions and I don't intend on adding one. Open and inspect [`c.sh`](https://github.com/nebez/c.sh/blob/main/c.sh), decide if you like it, then copy+paste it somewhere on your computer. After you've done that, here are a few ways to install it assuming it exists at `/absolute/path/to/c.sh`.
+- `codex`
+- `bash` *(but it can be invoke from `.zsh` or comparable)*
+- `jq`
 
-### Requirements
+Then open [`c.sh`](https://github.com/nebez/c.sh/blob/main/c.sh), inspect it, and if you decide you like it, copy+paste it somewhere to your liking and invoke it. If that's not enough for you, however, continue reading.
 
-- `codex` CLI in your `PATH`
-- `bash`
-- `jq` (required for parsing JSON output)
+There are no one-line installation instructions and I don't intend on adding one. After you've put `c.sh` somewhere on your computer, here are a few ways to install it assuming it exists at `/absolute/path/to/c.sh`.
 
 ### 1) Simple PATH install
 
@@ -58,7 +58,7 @@ install -m 0755 /absolute/path/to/c.sh ~/.local/bin/c
 home.packages = [
   (pkgs.writeShellScriptBin "c" (builtins.readFile /absolute/path/to/c.sh))
   pkgs.jq
-  # add the package that provides `codex` in your setup
+  # all your other packages
 ];
 ```
 
