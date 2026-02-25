@@ -146,7 +146,7 @@ assert_contains "$MOCK_PAYLOAD_DIR/args.1.txt" "--json"
 assert_contains "$MOCK_PAYLOAD_DIR/args.1.txt" "--sandbox"
 assert_contains "$MOCK_PAYLOAD_DIR/args.1.txt" "read-only"
 assert_contains "$MOCK_PAYLOAD_DIR/payload.1.txt" "Never read, open, inspect, or list files/directories."
-assert_contains "$MOCK_PAYLOAD_DIR/payload.1.txt" "Give ONE best command by default."
+assert_contains "$MOCK_PAYLOAD_DIR/payload.1.txt" "Return EXACTLY one shell command by default."
 assert_not_contains "$MOCK_PAYLOAD_DIR/payload.1.txt" "$sentinel"
 
 first_thread="$(<"$STATE_DIR/last_thread_id")"

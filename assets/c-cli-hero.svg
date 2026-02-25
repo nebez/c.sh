@@ -1,0 +1,54 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">c-cli hero image</title>
+  <desc id="desc">Stylized terminal-themed banner for c-cli: natural language to Codex command suggestions.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#081425"/>
+      <stop offset="0.55" stop-color="#0A1F2F"/>
+      <stop offset="1" stop-color="#10344A"/>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="140" y1="130" x2="1060" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#33D6B2"/>
+      <stop offset="1" stop-color="#F4B860"/>
+    </linearGradient>
+
+    <filter id="blurGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="22" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#FFFFFF" stroke-opacity="0.055"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <circle cx="1040" cy="100" r="170" fill="#33D6B2" fill-opacity="0.13" filter="url(#blurGlow)"/>
+  <circle cx="150" cy="540" r="150" fill="#F4B860" fill-opacity="0.12" filter="url(#blurGlow)"/>
+
+  <rect x="86" y="98" width="1028" height="434" rx="26" fill="#06111D" fill-opacity="0.80" stroke="#5AD9C3" stroke-opacity="0.35" stroke-width="2"/>
+
+  <rect x="122" y="138" width="956" height="52" rx="12" fill="#0D2335"/>
+  <circle cx="150" cy="164" r="7" fill="#FF605C"/>
+  <circle cx="176" cy="164" r="7" fill="#FFBD44"/>
+  <circle cx="202" cy="164" r="7" fill="#00CA4E"/>
+  <text x="230" y="170" fill="#9FB8CC" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="18">~/code/github.com/nebez/c-cli</text>
+
+  <text x="122" y="276" fill="#EAF6FF" font-family="Avenir Next, Futura, Segoe UI, sans-serif" font-size="82" font-weight="700">c.sh for </text>
+  <text x="442" y="276" fill="url(#accent)" font-family="Avenir Next, Futura, Segoe UI, sans-serif" font-size="82" font-weight="700">codex</text>
+
+  <text x="124" y="324" fill="#B8D4E8" font-family="Avenir Next, Futura, Segoe UI, sans-serif" font-size="34" font-weight="500">Natural language in, command suggestions out.</text>
+
+  <rect x="122" y="362" width="956" height="126" rx="16" fill="#07192A" stroke="#8CB3CC" stroke-opacity="0.25"/>
+  <text x="150" y="404" fill="#7EE3CB" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="24">$ c how do i find all .log files changed in the last day?</text>
+  <text x="150" y="444" fill="#EAF6FF" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="24">find . -type f -name '*.log' -mtime -1</text>
+
+  <text x="122" y="560" fill="#89A6BA" font-family="SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="20">OpenAI Codex-powered CLI helper</text>
+</svg>

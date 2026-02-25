@@ -1,6 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+system_prompt=""
+read -r -d '' system_prompt <<'EOF' || true
+You are a command suggestion assistant for terminal users.
+
+Hard rules:
+1) Never execute commands.
+2) Never run shell commands.
+3) Never read, open, inspect, or list files/directories.
+4) Never infer repository or filesystem state beyond the provided context.
+5) Only suggest commands for the user to run themselves.
+
+Output contract (strict):
+- Return EXACTLY one shell command by default.
+- Output plain terminal text only.
+- No Markdown, no code fences, no bullets, no tables, no labels.
+- No preface or explanation lines.
+- Do not output words like "Recommended", "Alternative", "Use", or commentary.
+- Put the command on a single line, copy-paste ready.
+- Use ASCII only.
+- Use normal hyphen-minus ("-") for flags, never en dash/em dash.
+
+When user explicitly asks for alternatives/options/comparison:
+- Return one command per line.
+- Commands only, no labels or explanations.
+
+Command selection rules:
+- Choose the simplest valid command that directly answers the question.
+- Prefer portable defaults available on macOS/Linux.
+- Prefer pgrep -af NAME over ps ... | grep ... for process lookup when appropriate.
+- For recursive text search, prefer rg with minimal valid flags.
+- For file-name search, prefer precise find forms (-type f, -name/-iname).
+- Quote user-provided literals safely.
+- Avoid unnecessary pipelines/subshells when a single command works.
+- Avoid destructive commands by default; if mutation is requested, suggest a safe preview/list command first.
+- Avoid sudo unless strictly required.
+
+Self-check before final output:
+- The command is syntactically valid.
+- Flags are valid for the selected tool.
+- The command directly matches the user request.
+- Output fully follows the strict output contract.
+EOF
+
 usage() {
   cat <<'EOF'
 Usage: c [--new] [-v|-vv] <question...>
@@ -23,6 +66,7 @@ Environment:
                        Defaults to: HOME USER SHELL EDITOR VISUAL PAGER LANG TERM
                        Only existing vars are included.
   C_STATE_DIR          (default: ~/.local/state/c)
+  C_NO_SPINNER         Set to 1 to disable the interactive loading spinner
 EOF
 }
 
@@ -40,6 +84,51 @@ reasoning_effort="low"
 note() {
   if (( verbose >= 1 )); then
     printf '%s\n' "$*" >&2
+  fi
+}
+
+spinner_pid=""
+spinner_start() {
+  [[ -n "$spinner_pid" ]] && return 0
+
+  local mode_label="$1"
+  local model_label="$2"
+  local reasoning_label="$3"
+  local dim=""
+  local reset=""
+
+  if command -v tput >/dev/null 2>&1 && [[ -n "${TERM:-}" && "${TERM}" != "dumb" ]]; then
+    dim="$(tput dim 2>/dev/null || true)"
+    reset="$(tput sgr0 2>/dev/null || true)"
+  fi
+  if [[ -z "$dim" || -z "$reset" ]]; then
+    dim=$'\033[2m'
+    reset=$'\033[0m'
+  fi
+
+  (
+    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+    local i=0
+    local frame=""
+    while :; do
+      frame="${frames[i % ${#frames[@]}]}"
+      printf '\r\033[2K[c] %s waiting for answer %s(%s, model=%s, reasoning=%s)%s' \
+        "$frame" "$dim" "$mode_label" "$model_label" "$reasoning_label" "$reset" >&2
+      i=$((i + 1))
+      sleep 0.08
+    done
+  ) &
+  spinner_pid="$!"
+}
+
+spinner_stop() {
+  if [[ -n "$spinner_pid" ]] && kill -0 "$spinner_pid" >/dev/null 2>&1; then
+    kill "$spinner_pid" >/dev/null 2>&1 || true
+    wait "$spinner_pid" 2>/dev/null || true
+  fi
+  spinner_pid=""
+  if [[ -t 2 ]]; then
+    printf '\r\033[2K' >&2
   fi
 }
 
@@ -164,8 +253,6 @@ if [[ -z "$context_env_block" ]]; then
   context_env_block="- (none)\n"
 fi
 
-system_prompt=$'You are a command suggestion assistant for terminal users.\n\nHard rules:\n1) Never execute commands.\n2) Never run shell commands.\n3) Never read, open, inspect, or list files/directories.\n4) Never infer repository or filesystem state beyond the provided context.\n5) Only suggest commands for the user to run themselves.\n\nDefault output contract (important):\n- Give ONE best command by default.\n- Output plain terminal text only (no Markdown, no code fences, no tables).\n- Keep it short.\n- Put the command first, copy-paste ready.\n- Optionally add one brief line after it only if needed to clarify.\n\nTerminal formatting rules:\n- You are writing to a developer in a terminal.\n- Prioritize readability with line breaks.\n- Use ASCII-only formatting.\n- Do not use Markdown syntax or backticks.\n- If giving alternatives, never place them in a single run-on sentence.\n- Put each alternative on its own line.\n- Use this shape for expanded replies:\n  Recommended:\n  <command>\n  Alternatives:\n  1) <command> - <short reason>\n  2) <command> - <short reason>\n\nAggressive adaptation rules using conversation history:\n- Treat a near-exact consecutive repeat as likely dissatisfaction.\n- \"Near-exact consecutive repeat\" means the current user request is semantically the same task as the immediately previous user request in this thread, even if wording differs slightly.\n- On the first near-exact consecutive repeat (same ask twice in a row): switch to a more verbose response immediately.\n- For that repeat case: provide one recommended command plus 2-3 alternatives, each with a short reason/tradeoff.\n- On the second and later near-exact consecutive repeats (same ask three+ times in a row): use chattiest mode.\n- In chattiest mode: provide one recommended command plus up to 4 alternatives, with concise tradeoffs and a brief \"when to use which\" line.\n- If successive requests are clearly different tasks, treat that as context shift and immediately return to concise default mode (one best command).\n\nWhen to expand beyond one command regardless of history:\n- User explicitly asks for alternatives/options/comparison.\n- There is a real ambiguity where one command is not reliable.\n\nCommand recommendation preferences:\n- Prefer portable defaults first (commands likely present on macOS/Linux).\n- Prefer exact matches when the user asks exact; only broaden patterns when uncertainty is explicit.\n- Prefer `pgrep -af <name>` over `ps ... | grep ...` for process lookup when appropriate.\n- For filename searches, prefer `find` forms that are precise (`-type f`, `-name`/`-iname`, scoped path).\n- If recommending `fd` or `rg`, label them as optional/faster and include a portable fallback when helpful.\n- Keep searches scoped to the likely working path (`.` or provided scope), not root-level scans, unless requested.\n- Quote user-provided literals/patterns safely.\n- Prefer null-safe piping for filenames when chaining commands (`-print0` with `xargs -0`).\n- Avoid unnecessary subshells/pipelines when a simpler single command works.\n- Avoid destructive commands by default; if deletion/mutation is requested, suggest a safe preview/list command first.\n- Avoid `sudo` unless strictly required and explicitly justified.\n- When two commands are equivalent, pick the simpler one.\n\nSafety and quality:\n- Prefer commands compatible with available shells in context.\n- If a command is risky/destructive, call that out and prefer a safe preview/dry-run first.'
-
 state_dir="${C_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/c}"
 mkdir -p "$state_dir"
 last_cwd_file="$state_dir/last_cwd"
@@ -207,11 +294,22 @@ log_file="$(mktemp "${TMPDIR:-/tmp}/c-log.XXXXXX")"
 json_log="$(mktemp "${TMPDIR:-/tmp}/c-json.XXXXXX")"
 err_log="$(mktemp "${TMPDIR:-/tmp}/c-err.XXXXXX")"
 cleanup() {
+  spinner_stop
   rm -f "$log_file"
   rm -f "$json_log"
   rm -f "$err_log"
 }
 trap cleanup EXIT
+
+request_mode="new thread"
+if [[ "$can_resume" -eq 1 ]]; then
+  request_mode="follow-up"
+fi
+
+use_spinner=0
+if [[ -t 2 && "${C_NO_SPINNER:-0}" != "1" && "$verbose" -lt 2 ]]; then
+  use_spinner=1
+fi
 
 if [[ "$can_resume" -eq 1 ]]; then
   note "[c] mode=resume thread=$last_thread_id window=${window_seconds}s"
@@ -237,10 +335,22 @@ else
   )
 fi
 
-if "${cmd[@]}" >"$json_log" 2>"$err_log"; then
-  exit_code=0
+if [[ "$use_spinner" -eq 1 ]]; then
+  "${cmd[@]}" >"$json_log" 2>"$err_log" &
+  cmd_pid="$!"
+  spinner_start "$request_mode" "$model" "$reasoning_effort"
+  if wait "$cmd_pid"; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  spinner_stop
 else
-  exit_code=$?
+  if "${cmd[@]}" >"$json_log" 2>"$err_log"; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
 fi
 
 if [[ -s "$json_log" ]]; then
