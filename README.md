@@ -16,9 +16,11 @@
 
 I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I [disabled the AI features in my IDE and terminal](https://nebezb.com/no-more-ai/).
 
-The one feature I miss most is asking my terminal for help remembering a command. So I brought that functionality back to my terminal using `codex`, a shell script, and an alias. `c.sh` is a thin wrapper around `codex exec` for command suggestions. It asks Codex for help non-interactively and, if re-invoked in the same directory (within 5 minutes), will offer alternative suggestions. It doesn't run any commands or read through your files. Just suggestions.
+The one feature I miss most is asking my terminal for help remembering a command. So I brought that functionality back using `codex`, a shell script, and an alias. `c.sh` is a thin wrapper around `codex exec` for command suggestions. I didn't like the other options out there that required installing python adding plugins to my zsh.
 
-I've tested this exclusively on `zsh`. It should work on `bash` too (including macOS versions).
+`c.sh` asks Codex for help non-interactively and, if re-invoked in the same directory (within 5 minutes), will offer alternative suggestions. It doesn't run any commands or read through your files. Just suggestions.
+
+I've tested this exclusively on `zsh`. It probably works with `bash` too (including macOS versions).
 
 ## Options
 
@@ -46,8 +48,8 @@ echo "search recursively for TODO comments" | c
 
 Ensure you have the below available:
 
-- `codex`
-- `bash` *(but it can be invoke from `.zsh` or comparable)*
+- `codex` – you must be authenticated already!
+- `bash` *(but it can be invoked from `.zsh` or comparable)*
 - `jq`
 
 Then open [`c.sh`](https://github.com/nebez/c.sh/blob/main/c.sh), inspect it, and if you decide you like it, copy+paste it somewhere to your liking and invoke it. If that's not enough for you, however, continue reading.
