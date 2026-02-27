@@ -14,9 +14,9 @@
 
 ## Why
 
-I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I [disabled the AI features in my IDE and terminal](https://nebezb.com/no-more-ai/). I still use Codex in Zed through ACP. But very infrequently.
+I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I [disabled the AI features in my IDE and terminal](https://nebezb.com/no-more-ai/).
 
-The one feature I missed most was asking my terminal for help remembering a command. So I brought that functionality back to my terminal using `codex`, a shell script, and an alias. `c.sh` is a thin wrapper around `codex exec` for command suggestions. It asks Codex for help non-interactively and, if re-invoked in the same directory (within a time window), will offer alternative suggestions. It doesn't run any commands or read through your files. Just suggestions.
+The one feature I miss most is asking my terminal for help remembering a command. So I brought that functionality back to my terminal using `codex`, a shell script, and an alias. `c.sh` is a thin wrapper around `codex exec` for command suggestions. It asks Codex for help non-interactively and, if re-invoked in the same directory (within 5 minutes), will offer alternative suggestions. It doesn't run any commands or read through your files. Just suggestions.
 
 I've tested this exclusively on `zsh`. It should work on `bash` too (including macOS versions).
 
