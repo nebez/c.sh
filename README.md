@@ -4,6 +4,10 @@
 
 Use Codex to help you with CLI command translation. OpenAI-only, because Codex is the whole point.
 
+## Demo
+
+<video src="assets/recording.mp4" controls muted playsinline></video>
+
 ## Why
 
 I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I disabled the AI features in my IDE and terminal. I still use Codex in Zed through ACP. But very infrequently.
