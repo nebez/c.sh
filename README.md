@@ -1,17 +1,20 @@
-# c.sh
-
-![c.sh hero](assets/c-sh-hero.svg)
-
-Use Codex to help you with CLI command translation. OpenAI-only, because Codex is the whole point.
+<p align="center">
+  <img src="assets/c-sh-hero.svg" alt="c.sh hero" width="400">
+</p>
+<p align="center">
+  <code>c.sh</code>: Use Codex to help you with the one feature it's missing: CLI command translation.
+</p>
 
 ## Demo
 
-![c.sh demo](assets/recording.webp)
+<p align="center">
+  <img src="assets/recording.webp" alt="c.sh demo" width="600">
+</p>
 
 
 ## Why
 
-I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I disabled the AI features in my IDE and terminal. I still use Codex in Zed through ACP. But very infrequently.
+I've been using codex so much it's hard to imagine using any other tooling that provides comparable DX... so I [disabled the AI features in my IDE and terminal](https://nebezb.com/no-more-ai/). I still use Codex in Zed through ACP. But very infrequently.
 
 The one feature I missed most was asking my terminal for help remembering a command. So I brought that functionality back to my terminal using `codex`, a shell script, and an alias. `c.sh` is a thin wrapper around `codex exec` for command suggestions. It asks Codex for help non-interactively and, if re-invoked in the same directory (within a time window), will offer alternative suggestions.
 
