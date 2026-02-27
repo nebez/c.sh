@@ -6,7 +6,10 @@ Use Codex to help you with CLI command translation. OpenAI-only, because Codex i
 
 ## Demo
 
-<video src="assets/recording.mp4" controls muted playsinline></video>
+<video width="320" height="240" controls>
+  <source src="assets/recording.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## Why
 
